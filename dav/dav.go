@@ -16,13 +16,16 @@ type DAV struct {
 	Handler *mux.Router
 	Log     log.Logger
 	FS      webdav.FileSystem
+	Address string
 }
 
 // New todo
-func New(path string) *DAV {
+func New(config config.Config) *DAV {
+
+	path := config.Get("path")
 
 	h := &webdav.Handler{
-		Prefix:     "/dav",
+		Prefix:     "/dav/",
 		FileSystem: webdav.Dir(path),
 		LockSystem: webdav.NewMemLS(),
 		Logger: func(r *http.Request, err error) {
@@ -46,14 +49,15 @@ func New(path string) *DAV {
 	// 	"GET": h2,
 	// }
 	router := mux.NewRouter()
-	router.HandleFunc("/dav", h2)
+	router.HandleFunc(`/dav/{_dummy:.*}`, h2)
 	return &DAV{
 		Handler: router,
+		Address: config.Get("address"),
 	}
 }
 
 // Run todo
-func (s *DAV) Run(config config.Config) error {
+func (s *DAV) Run() error {
 
-	return http.ListenAndServe(config.Get("address"), s.Handler)
+	return http.ListenAndServe(s.Address, s.Handler)
 }
