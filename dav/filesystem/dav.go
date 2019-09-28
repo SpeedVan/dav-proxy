@@ -1,4 +1,4 @@
-package dav
+package filesystem
 
 import (
 	"log"
@@ -20,9 +20,9 @@ type DAV struct {
 }
 
 // New todo
-func New(config config.Config) *DAV {
+func New(config config.Config) (*DAV, error) {
 
-	path := config.Get("path")
+	path := config.Get("WEBDAV_PATH")
 
 	h := &webdav.Handler{
 		Prefix:     "/dav/",
@@ -53,7 +53,7 @@ func New(config config.Config) *DAV {
 	return &DAV{
 		Handler: router,
 		Address: config.Get("address"),
-	}
+	}, nil
 }
 
 // Run todo

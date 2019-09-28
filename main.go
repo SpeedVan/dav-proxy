@@ -8,13 +8,14 @@ import (
 )
 
 func main() {
-	maybeEnvConfig := env.LoadAll()
-
-	if config, ok := maybeEnvConfig.(*env.EnvConfig); ok {
-		log.Println("start")
-		log.Fatal(dav.New(config).Run())
+	if config, err := env.LoadAll(); err == nil {
+		if fs, err := filesystem.New(config); err == nil {
+			log.Println("start")
+			log.Fatal(fs.Run())
+		} else {
+			log.Fatal(err)
+		}
 	} else {
-		log.Fatal(maybeEnvConfig.(error))
+		log.Fatal(err)
 	}
-
 }
