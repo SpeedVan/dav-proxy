@@ -19,14 +19,14 @@ type DAV struct {
 	Address string
 }
 
-// New todo
-func New(config config.Config) (*DAV, error) {
+// NewHandleFunc todo
+func NewHandleFunc(rootPath string, config config.Config) (string, func(http.ResponseWriter, *http.Request)) {
 
-	path := config.Get("WEBDAV_PATH")
+	dir := config.Get("WEBDAV_FILESYSTEM_DIR")
 
 	h := &webdav.Handler{
-		Prefix:     "/dav/",
-		FileSystem: webdav.Dir(path),
+		Prefix:     rootPath,
+		FileSystem: webdav.Dir(dir),
 		LockSystem: webdav.NewMemLS(),
 		Logger: func(r *http.Request, err error) {
 			if err != nil {
@@ -44,16 +44,7 @@ func New(config config.Config) (*DAV, error) {
 		// }
 		h.ServeHTTP(w, r)
 	})
-
-	// h3 := handlers.MethodHandler{
-	// 	"GET": h2,
-	// }
-	router := mux.NewRouter()
-	router.HandleFunc(`/dav/{_dummy:.*}`, h2)
-	return &DAV{
-		Handler: router,
-		Address: config.Get("address"),
-	}, nil
+	return rootPath + `{_dummy:.*}`, h2
 }
 
 // Run todo
