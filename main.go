@@ -13,8 +13,8 @@ func main() {
 	if config, err := env.LoadAll(); err == nil {
 		app := web.New(config)
 		app.
-			HandleFunc(filesystem.NewHandleFunc("/file/", config)).
-			HandleFunc(gitlab.NewHandleFunc("/{protocol}/{domain}/{group}/{project}/{sha}/{path:.*}", config))
+			HandleFunc(filesystem.NewHandleFunc("/file/", config.WithPrefix("WEBDAV_"))).
+			HandleFunc(gitlab.NewHandleFunc("/{protocol}/{domain}/{group}/{project}/{sha}/{path:.*}", config.WithPrefix("GITLAB_")))
 		log.Println("start")
 		log.Fatal(app.Run())
 	} else {

@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -22,7 +23,7 @@ type DAV struct {
 // NewHandleFunc todo
 func NewHandleFunc(rootPath string, config config.Config) (string, func(http.ResponseWriter, *http.Request)) {
 
-	dir := config.Get("WEBDAV_FILESYSTEM_DIR")
+	dir := config.Get("FILESYSTEM_DIR")
 
 	h := &webdav.Handler{
 		Prefix:     rootPath,
@@ -36,6 +37,7 @@ func NewHandleFunc(rootPath string, config config.Config) (string, func(http.Res
 	}
 
 	h2 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.Method + " " + r.URL.Path)
 		// u, p, ok := r.BasicAuth()
 		// if !(ok == true && u == wd.Config.WebDav.Username && p == wd.Config.WebDav.Password) {
 		// 	w.Header().Set("WWW-Authenticate", `Basic realm="davfs"`)

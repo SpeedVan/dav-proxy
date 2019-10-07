@@ -65,7 +65,7 @@ func NewHandleFunc(path string, config config.Config) (string, func(http.Respons
 	}
 }
 
-// Head todo
+// Head 根据gitlab的restApi /api/v4/projects/:id/repository/tree 效果可知，文件夹存不存在都无法直接得知，我们需要向上找一层，然后再判断是否存在列表中
 func (s *DAVProxy) Head(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fmt.Println("head")
@@ -82,6 +82,7 @@ func (s *DAVProxy) Head(w http.ResponseWriter, r *http.Request) {
 	header.Set("Etag", "\"13442cef32eaa60012\"")
 	header.Set("Last-Modified", "Sun, 29 Dec 2013 02:26:31 GMT")
 	header.Set("Date", "Mon, 30 Sep 2019 02:08:43 GMT")
+	s.GitlabHTTPClient.Get(vars["group"], vars["project"], vars["sha"], vars["path"])
 	w.WriteHeader(200)
 	// r.URL.Path
 	// s.GitlabHTTPClient
