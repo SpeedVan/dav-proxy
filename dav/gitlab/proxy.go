@@ -1,7 +1,9 @@
 package gitlab
 
 import (
+	"encoding/xml"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
@@ -51,6 +53,7 @@ func NewHandleFunc(path string, config config.Config) (string, func(http.Respons
 
 	return path, func(w http.ResponseWriter, r *http.Request) {
 		// url := r.URL.Path
+		println("method:" + r.Method + ",url:" + r.URL.Path)
 		switch r.Method {
 		case "HEAD":
 			o.Head(w, r)
@@ -82,7 +85,7 @@ func (s *DAVProxy) Head(w http.ResponseWriter, r *http.Request) {
 	header.Set("Etag", "\"13442cef32eaa60012\"")
 	header.Set("Last-Modified", "Sun, 29 Dec 2013 02:26:31 GMT")
 	header.Set("Date", "Mon, 30 Sep 2019 02:08:43 GMT")
-	s.GitlabHTTPClient.Get(vars["group"], vars["project"], vars["sha"], vars["path"])
+
 	w.WriteHeader(200)
 	// r.URL.Path
 	// s.GitlabHTTPClient
@@ -90,25 +93,42 @@ func (s *DAVProxy) Head(w http.ResponseWriter, r *http.Request) {
 
 // Get todo
 func (s *DAVProxy) Get(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	reader, err := s.GitlabHTTPClient.GetFile(vars["group"], vars["project"], vars["sha"], vars["path"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 	header := w.Header()
 	header.Set("Accept-Ranges", "bytes")
-	header.Set("Content-Length", "18")
+	// header.Set("Content-Length", "18")
 	header.Set("Content-Type", "text/plain; charset=utf-8")
 	header.Set("Etag", "\"13442cef32eaa60012\"")
 	header.Set("Last-Modified", "Sun, 29 Dec 2013 02:26:31 GMT")
 	header.Set("Date", "Mon, 30 Sep 2019 02:08:43 GMT")
-	w.WriteHeader(200)
-	w.Write([]byte("# ~/.bash_logout\n\n"))
+	io.Copy(w, reader)
 }
 
 // Propfind todo
 func (s *DAVProxy) Propfind(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	treeNodes, err := s.GitlabHTTPClient.GetTree(vars["group"], vars["project"], vars["sha"], vars["path"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	bytes, err := xml.Marshal(treeNodes2DAVStructure(treeNodes, r.URL.Path, "Fri, 27 Sep 2019 11:42:40 GMT"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	header := w.Header()
 	header.Set("Content-Type", "text/xml; charset=utf-8")
 	header.Set("Transfer-Encoding", "chunked")
 	w.WriteHeader(207)
 	w.Write([]byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"))
-	w.Write(data_dav)
+
+	w.Write(bytes)
 }
 
 // Options todo
