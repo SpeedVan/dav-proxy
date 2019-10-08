@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	data_dav, _ = xml.Marshal(&st.Multistatus{
+	dataDav, _ = xml.Marshal(&st.Multistatus{
 		D: "DAV:",
 		Responses: []*st.Response{
 			&st.Response{
@@ -84,7 +84,7 @@ var (
 		},
 	})
 
-	data_dav_bash_logout, _ = xml.Marshal(&st.Multistatus{
+	dataDavBashLogout, _ = xml.Marshal(&st.Multistatus{
 		D: "DAV:",
 		Responses: []*st.Response{
 			&st.Response{

@@ -94,17 +94,17 @@ func (s *DAVProxy) Head(w http.ResponseWriter, r *http.Request) {
 // Get todo
 func (s *DAVProxy) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	reader, err := s.GitlabHTTPClient.GetFile(vars["group"], vars["project"], vars["sha"], vars["path"])
+	reader, resHeader, err := s.GitlabHTTPClient.GetFile(vars["group"], vars["project"], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	header := w.Header()
 	header.Set("Accept-Ranges", "bytes")
-	// header.Set("Content-Length", "18")
-	header.Set("Content-Type", "text/plain; charset=utf-8")
-	header.Set("Etag", "\"13442cef32eaa60012\"")
-	header.Set("Last-Modified", "Sun, 29 Dec 2013 02:26:31 GMT")
-	header.Set("Date", "Mon, 30 Sep 2019 02:08:43 GMT")
+	header.Set("Content-Length", resHeader.Get("X-Gitlab-Size"))
+	header.Set("Content-Type", resHeader.Get("Content-Type"))
+	header.Set("Etag", resHeader.Get("X-Gitlab-Blob-Id"))
+	header.Set("Last-Modified", resHeader.Get("Date"))
+	header.Set("Date", resHeader.Get("Date"))
 	io.Copy(w, reader)
 }
 
@@ -137,23 +137,5 @@ func (s *DAVProxy) Options(w http.ResponseWriter, r *http.Request) {
 	header.Set("Allow", "OPTIONS, PROPFIND")
 	header.Set("Dav", "1, 2")
 	header.Set("Ms-Author-Via", "DAV")
-	w.Write(data_dav)
-}
-
-// Propfind2 todo
-func (s *DAVProxy) Propfind2(w http.ResponseWriter, r *http.Request) {
-	header := w.Header()
-	header.Set("Content-Type", "text/xml; charset=utf-8")
-	w.WriteHeader(207)
-	w.Write([]byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"))
-	w.Write(data_dav_bash_logout)
-}
-
-// Options2 todo
-func (s *DAVProxy) Options2(w http.ResponseWriter, r *http.Request) {
-	header := w.Header()
-	header.Set("Allow", "OPTIONS, GET, HEAD, PROPFIND")
-	header.Set("Dav", "1, 2")
-	header.Set("Ms-Author-Via", "DAV")
-	w.Write(data_dav)
+	w.Write(dataDav)
 }
