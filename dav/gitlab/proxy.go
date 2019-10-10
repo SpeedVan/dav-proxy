@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -14,10 +15,16 @@ import (
 	"github.com/SpeedVan/proxy-in-dav/dav"
 )
 
+var (
+	// EmptyHeader empty header
+	EmptyHeader = http.Header{}
+)
+
 // DAVProxy todo
 type DAVProxy struct {
 	dav.DAV
 	GitlabHTTPClient *gitlab.Client
+	FullFileInfo     bool
 }
 
 // New todo
@@ -27,9 +34,13 @@ func New(config config.Config) (*DAVProxy, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	fullFileInfo, err := strconv.ParseBool(config.Get("FULL_FILEINFO"))
+	if err != nil {
+		fullFileInfo = false
+	}
 	return &DAVProxy{
 		GitlabHTTPClient: gitlabHTTPClient,
+		FullFileInfo:     fullFileInfo,
 	}, nil
 }
 
@@ -119,7 +130,21 @@ func (s *DAVProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	bytes, err := xml.Marshal(graphql2DAVStructure(graphql, r.URL.Path, "Fri, 27 Sep 2019 11:42:40 GMT"))
+	var fileInfoFunc func(string) http.Header
+	if s.FullFileInfo {
+		fileInfoFunc = func(path string) http.Header {
+			fileHeader, err := s.GitlabHTTPClient.HeadFile(vars["group"], vars["project"], vars["sha"], path)
+			if err != nil {
+				return EmptyHeader
+			}
+			return fileHeader
+		}
+	} else {
+		fileInfoFunc = func(string) http.Header {
+			return EmptyHeader
+		}
+	}
+	bytes, err := xml.Marshal(graphql2DAVStructure(graphql, r.URL.Path, "Fri, 27 Sep 2019 11:42:40 GMT", fileInfoFunc))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

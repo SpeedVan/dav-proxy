@@ -1,6 +1,8 @@
 package gitlab
 
 import (
+	"net/http"
+
 	"github.com/SpeedVan/go-common/client/httpclient/gitlab"
 	"github.com/SpeedVan/go-common/client/httpclient/gitlab/graphql"
 	"github.com/SpeedVan/proxy-in-dav/dav/structure"
@@ -103,22 +105,22 @@ func treeNode2DAVResponse(node *gitlab.TreeNode, url string, now string) *struct
 	}
 }
 
-func graphql2DAVStructure(graphql *graphql.Graphql, url string, now string) *structure.Multistatus {
+func graphql2DAVStructure(graphql *graphql.Graphql, url string, now string, fileInfoFunc func(string) http.Header) *structure.Multistatus {
 	tree := graphql.Data.Project.Repository.Tree
 	return &st.Multistatus{
 		D:         "DAV:",
-		Responses: treesAndBlobs2DAVResponses(tree.Trees.Nodes, tree.Blobs.Nodes, url, now),
+		Responses: treesAndBlobs2DAVResponses(tree.Trees.Nodes, tree.Blobs.Nodes, url, now, fileInfoFunc),
 	}
 }
 
-func treesAndBlobs2DAVResponses(trees []*graphql.Node, blobs []*graphql.Node, url string, now string) []*structure.Response {
+func treesAndBlobs2DAVResponses(trees []*graphql.Node, blobs []*graphql.Node, url string, now string, fileInfoFunc func(string) http.Header) []*structure.Response {
 	lenTree := len(trees)
 	responses := make([]*structure.Response, lenTree+len(blobs))
 	for index, tree := range trees {
 		responses[index] = tree2DAVResponse(tree, url, now)
 	}
 	for index, blob := range blobs {
-		responses[lenTree+index] = blob2DAVResponse(blob, url, now)
+		responses[lenTree+index] = blob2DAVResponse(blob, url, now, fileInfoFunc(blob.Path))
 	}
 	return responses
 }
@@ -160,16 +162,16 @@ func tree2DAVResponse(tree *graphql.Node, url string, now string) *structure.Res
 	}
 }
 
-func blob2DAVResponse(blob *graphql.Node, url string, now string) *structure.Response {
+func blob2DAVResponse(blob *graphql.Node, url string, now string, header http.Header) *structure.Response {
 	return &st.Response{
 		Href: &st.Href{
 			Innerxml: url + blob.Name,
 		},
 		Propstat: &st.Propstat{
 			Prop: &st.Prop{
-				// Getcontentlength: &st.Getcontentlength{
-				// 	Innerxml: "18",
-				// },
+				Getcontentlength: &st.Getcontentlength{
+					Innerxml: header.Get("X-Gitlab-Size"),
+				},
 				// Getcontenttype: &st.Getcontenttype{
 				// 	Innerxml: "text/plain; charset=utf-8",
 				// },
