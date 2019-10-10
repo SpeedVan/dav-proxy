@@ -2,6 +2,7 @@ package filesystem
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -37,16 +38,40 @@ func NewHandleFunc(rootPath string, config config.Config) (string, func(http.Res
 	}
 
 	h2 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Method + " " + r.URL.Path)
+		fmt.Println(r.Method + " " + r.URL.Path + " " + r.URL.RawQuery)
+		fmt.Println(r.Header)
+		bs, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		fmt.Println(string(bs))
 		// u, p, ok := r.BasicAuth()
 		// if !(ok == true && u == wd.Config.WebDav.Username && p == wd.Config.WebDav.Password) {
 		// 	w.Header().Set("WWW-Authenticate", `Basic realm="davfs"`)
 		// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		// 	return
 		// }
-		h.ServeHTTP(w, r)
+		h.ServeHTTP(&rwWrapper{rw: w}, r)
 	})
 	return rootPath + `{_dummy:.*}`, h2
+}
+
+type rwWrapper struct {
+	rw http.ResponseWriter
+}
+
+func (s *rwWrapper) Header() http.Header {
+	return s.rw.Header()
+}
+
+func (s *rwWrapper) Write(b []byte) (int, error) {
+	println(string(b))
+	return s.rw.Write(b)
+}
+
+func (s *rwWrapper) WriteHeader(statusCode int) {
+	println(statusCode)
+	s.rw.WriteHeader(statusCode)
 }
 
 // Run todo

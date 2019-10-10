@@ -63,7 +63,8 @@ func NewHandleFunc(path string, config config.Config) (string, func(http.Respons
 			o.Propfind(w, r)
 		case "OPTIONS":
 			o.Options(w, r)
-
+		default:
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		}
 	}
 }
@@ -112,12 +113,13 @@ func (s *DAVProxy) Get(w http.ResponseWriter, r *http.Request) {
 func (s *DAVProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	treeNodes, err := s.GitlabHTTPClient.GetTree(vars["group"], vars["project"], vars["sha"], vars["path"])
+	// treeNodes, err := s.GitlabHTTPClient.GetTree(vars["group"], vars["project"], vars["sha"], vars["path"])
+	graphql, err := s.GitlabHTTPClient.Graphql(vars["group"], vars["project"], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	bytes, err := xml.Marshal(treeNodes2DAVStructure(treeNodes, r.URL.Path, "Fri, 27 Sep 2019 11:42:40 GMT"))
+	bytes, err := xml.Marshal(graphql2DAVStructure(graphql, r.URL.Path, "Fri, 27 Sep 2019 11:42:40 GMT"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
