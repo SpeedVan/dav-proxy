@@ -3,4 +3,4 @@ build/
 vendor/
 __debug_bin
 
-dav_app
+dav-proxy

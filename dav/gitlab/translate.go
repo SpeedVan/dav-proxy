@@ -3,31 +3,31 @@ package gitlab
 import (
 	"net/http"
 
+	"github.com/SpeedVan/dav-proxy/dav/structure"
+	st "github.com/SpeedVan/dav-proxy/dav/structure"
 	"github.com/SpeedVan/go-common/client/httpclient/gitlab"
 	"github.com/SpeedVan/go-common/client/httpclient/gitlab/graphql"
-	"github.com/SpeedVan/proxy-in-dav/dav/structure"
-	st "github.com/SpeedVan/proxy-in-dav/dav/structure"
 )
 
 // treeNodes2DAVStructure
-func treeNodes2DAVStructure(nodes []*gitlab.TreeNode, url string, now string) *structure.Multistatus {
+func treeNodes2DAVStructure(nodes []*gitlab.TreeNode, url string, now string, fileInfoFunc func(string) http.Header) *structure.Multistatus {
 	return &st.Multistatus{
 		D:         "DAV:",
-		Responses: treeNodes2DAVResponses(nodes, url, now),
+		Responses: treeNodes2DAVResponses(nodes, url, now, fileInfoFunc),
 	}
 }
 
 // treeNodes2DAVResponses mean map
-func treeNodes2DAVResponses(nodes []*gitlab.TreeNode, url string, now string) []*structure.Response {
+func treeNodes2DAVResponses(nodes []*gitlab.TreeNode, url string, now string, fileInfoFunc func(string) http.Header) []*structure.Response {
 	responses := make([]*structure.Response, len(nodes))
 	for index, node := range nodes {
-		responses[index] = treeNode2DAVResponse(node, url, now)
+		responses[index] = treeNode2DAVResponse(node, url, now, fileInfoFunc)
 	}
 	return responses
 }
 
 // treeNode2DAVResponse
-func treeNode2DAVResponse(node *gitlab.TreeNode, url string, now string) *structure.Response {
+func treeNode2DAVResponse(node *gitlab.TreeNode, url string, now string, fileInfoFunc func(string) http.Header) *structure.Response {
 	if node.Type == "tree" {
 		return &st.Response{
 			Href: &st.Href{
@@ -64,15 +64,22 @@ func treeNode2DAVResponse(node *gitlab.TreeNode, url string, now string) *struct
 			},
 		}
 	}
+	header := fileInfoFunc(node.Path)
+	var getcontentlength *st.Getcontentlength
+	if size := header.Get("X-Gitlab-Size"); size == "" {
+		getcontentlength = nil
+	} else {
+		getcontentlength = &st.Getcontentlength{
+			Innerxml: size,
+		}
+	}
 	return &st.Response{
 		Href: &st.Href{
 			Innerxml: url + node.Name,
 		},
 		Propstat: &st.Propstat{
 			Prop: &st.Prop{
-				// Getcontentlength: &st.Getcontentlength{
-				// 	Innerxml: "18",
-				// },
+				Getcontentlength: getcontentlength,
 				// Getcontenttype: &st.Getcontenttype{
 				// 	Innerxml: "text/plain; charset=utf-8",
 				// },
@@ -111,6 +118,13 @@ func graphql2DAVStructure(graphql *graphql.Graphql, url string, now string, file
 		D:         "DAV:",
 		Responses: treesAndBlobs2DAVResponses(tree.Trees.Nodes, tree.Blobs.Nodes, url, now, fileInfoFunc),
 	}
+}
+
+type BlobRequest struct {
+	blob         *graphql.Node
+	url          string
+	now          string
+	fileInfoFunc func(string) http.Header
 }
 
 func treesAndBlobs2DAVResponses(trees []*graphql.Node, blobs []*graphql.Node, url string, now string, fileInfoFunc func(string) http.Header) []*structure.Response {

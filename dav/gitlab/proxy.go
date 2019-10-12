@@ -10,9 +10,9 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/SpeedVan/dav-proxy/dav"
 	"github.com/SpeedVan/go-common/client/httpclient/gitlab"
 	"github.com/SpeedVan/go-common/config"
-	"github.com/SpeedVan/proxy-in-dav/dav"
 )
 
 var (
@@ -106,9 +106,10 @@ func (s *DAVProxy) Head(w http.ResponseWriter, r *http.Request) {
 // Get todo
 func (s *DAVProxy) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	reader, resHeader, err := s.GitlabHTTPClient.GetFile(vars["group"], vars["project"], vars["sha"], vars["path"])
+	reader, resHeader, err := s.GitlabHTTPClient.GetFile(vars["protocol"], vars["group"], vars["project"], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	header := w.Header()
 	header.Set("Accept-Ranges", "bytes")
@@ -124,27 +125,32 @@ func (s *DAVProxy) Get(w http.ResponseWriter, r *http.Request) {
 func (s *DAVProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	// treeNodes, err := s.GitlabHTTPClient.GetTree(vars["group"], vars["project"], vars["sha"], vars["path"])
-	graphql, err := s.GitlabHTTPClient.Graphql(vars["group"], vars["project"], vars["sha"], vars["path"])
+	treeNodes, err := s.GitlabHTTPClient.GetTree(vars["protocol"], vars["group"], vars["project"], vars["sha"], vars["path"])
+	// graphql, err := s.GitlabHTTPClient.Graphql(vars["protocol"], vars["group"], vars["project"], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var fileInfoFunc func(string) http.Header
+	fileInfoFunc := func(string) string {
+		return ""
+	}
 	if s.FullFileInfo {
-		fileInfoFunc = func(path string) http.Header {
-			fileHeader, err := s.GitlabHTTPClient.HeadFile(vars["group"], vars["project"], vars["sha"], path)
+		// fileInfoFunc = func(path string) http.Header {
+		// 	fileHeader, err := s.GitlabHTTPClient.HeadFile(vars["protocol"], vars["group"], vars["project"], vars["sha"], path)
+		// 	if err != nil {
+		// 		return EmptyHeader
+		// 	}
+		// 	return fileHeader
+		// }
+		fileInfoFunc = func(blodID string) string {
+			size, err := s.GitlabHTTPClient.GetBlobSizeFromBody(vars["protocol"], vars["group"], vars["project"], blodID)
 			if err != nil {
-				return EmptyHeader
+				return ""
 			}
-			return fileHeader
-		}
-	} else {
-		fileInfoFunc = func(string) http.Header {
-			return EmptyHeader
+			return size
 		}
 	}
-	bytes, err := xml.Marshal(graphql2DAVStructure(graphql, r.URL.Path, "Fri, 27 Sep 2019 11:42:40 GMT", fileInfoFunc))
+	bytes, err := xml.Marshal(treeNodes2DAVStructure2(treeNodes, r.URL.Path, "Fri, 27 Sep 2019 11:42:40 GMT", fileInfoFunc))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

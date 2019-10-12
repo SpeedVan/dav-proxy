@@ -3,7 +3,7 @@ package gitlab
 import (
 	"encoding/xml"
 
-	st "github.com/SpeedVan/proxy-in-dav/dav/structure"
+	st "github.com/SpeedVan/dav-proxy/dav/structure"
 )
 
 var (
