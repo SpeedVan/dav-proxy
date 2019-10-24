@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/astaxie/beego/cache"
 	"github.com/gorilla/mux"
 
 	"github.com/SpeedVan/dav-proxy/dav"
@@ -24,6 +25,7 @@ var (
 type DAVProxy struct {
 	dav.DAV
 	GitlabHTTPClient *gitlab.Client
+	Cache            *cache.Cache
 	FullFileInfo     bool
 }
 
@@ -50,15 +52,6 @@ func NewHandleFunc(path string, config config.Config) (string, func(http.Respons
 	if err != nil {
 		log.Fatal(err)
 	}
-	// http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	// u, p, ok := r.BasicAuth()
-	// 	// if !(ok == true && u == wd.Config.WebDav.Username && p == wd.Config.WebDav.Password) {
-	// 	// 	w.Header().Set("WWW-Authenticate", `Basic realm="davfs"`)
-	// 	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
-	// 	// 	return
-	// 	// }
-	// 	// h.ServeHTTP(w, r)
-	// })
 
 	//localhost:8887/{protocol:(http|https)}/{domain}/{group}/{project}/{sha}/{path:.*} liunx挂载proxy服务地址
 
@@ -99,14 +92,12 @@ func (s *DAVProxy) Head(w http.ResponseWriter, r *http.Request) {
 	header.Set("Date", "Mon, 30 Sep 2019 02:08:43 GMT")
 
 	w.WriteHeader(200)
-	// r.URL.Path
-	// s.GitlabHTTPClient
 }
 
 // Get todo
 func (s *DAVProxy) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	reader, resHeader, err := s.GitlabHTTPClient.GetFile(vars["protocol"], vars["group"], vars["project"], vars["sha"], vars["path"])
+	reader, resHeader, err := s.GitlabHTTPClient.GetFile("http", vars["group"], vars["project"], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -125,7 +116,7 @@ func (s *DAVProxy) Get(w http.ResponseWriter, r *http.Request) {
 func (s *DAVProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	treeNodes, err := s.GitlabHTTPClient.GetTree(vars["protocol"], vars["group"], vars["project"], vars["sha"], vars["path"])
+	treeNodes, err := s.GitlabHTTPClient.GetTree("http", vars["group"], vars["project"], vars["sha"], vars["path"])
 	// graphql, err := s.GitlabHTTPClient.Graphql(vars["protocol"], vars["group"], vars["project"], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -135,15 +126,8 @@ func (s *DAVProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 		return ""
 	}
 	if s.FullFileInfo {
-		// fileInfoFunc = func(path string) http.Header {
-		// 	fileHeader, err := s.GitlabHTTPClient.HeadFile(vars["protocol"], vars["group"], vars["project"], vars["sha"], path)
-		// 	if err != nil {
-		// 		return EmptyHeader
-		// 	}
-		// 	return fileHeader
-		// }
 		fileInfoFunc = func(blodID string) string {
-			size, err := s.GitlabHTTPClient.GetBlobSizeFromBody(vars["protocol"], vars["group"], vars["project"], blodID)
+			size, err := s.GitlabHTTPClient.GetBlobSizeFromBody("http", vars["group"], vars["project"], blodID)
 			if err != nil {
 				return ""
 			}
