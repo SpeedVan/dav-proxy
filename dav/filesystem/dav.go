@@ -22,7 +22,9 @@ type DAV struct {
 }
 
 // NewHandleFunc todo
-func NewHandleFunc(rootPath string, config config.Config) (string, func(http.ResponseWriter, *http.Request)) {
+func NewHandleFunc(name string, config config.Config) (string, func(http.ResponseWriter, *http.Request)) {
+
+	rootPath := "/" + name + "/"
 
 	dir := config.Get("FILESYSTEM_DIR")
 
