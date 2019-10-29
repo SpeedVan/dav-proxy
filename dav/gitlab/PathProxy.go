@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/astaxie/beego/cache"
+	"github.com/SpeedVan/go-common/cache"
 	"github.com/gorilla/mux"
 
 	"github.com/SpeedVan/dav-proxy/dav"
@@ -25,7 +25,7 @@ type PathProxy struct {
 	Sha              string
 	Path             string
 	GitlabHTTPClient *gitlab.Client
-	Cache            *cache.Cache
+	Cache            cache.StreamClient
 	FullFileInfo     bool
 }
 

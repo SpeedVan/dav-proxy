@@ -2,10 +2,10 @@ package gitlab
 
 import (
 	"encoding/xml"
-	"fmt"
 	"net/http"
+	"strings"
 
-	"github.com/astaxie/beego/cache"
+	"github.com/SpeedVan/go-common/cache"
 	"github.com/gorilla/mux"
 
 	"github.com/SpeedVan/dav-proxy/dav"
@@ -23,7 +23,7 @@ type ProjectProxy struct {
 	Group            string
 	Project          string
 	GitlabHTTPClient *gitlab.Client
-	Cache            *cache.Cache
+	Cache            cache.StreamClient
 }
 
 // NewProjectProxy todo
@@ -36,7 +36,7 @@ func NewProjectProxy(cl *gitlab.Client) *ProjectProxy {
 // GetRoute todo
 func (s *ProjectProxy) GetRoute() web.RouteMap {
 	return common.DefaultDavReadonlyMethodsRouteMapBuilder(
-		"/"+s.Name+"/{group}/{project}/",
+		"/"+s.Name+"/{gpid}/",
 		s.Head,
 		s.Get,
 		s.Propfind,
@@ -58,15 +58,15 @@ func (s *ProjectProxy) Get(w http.ResponseWriter, r *http.Request) {
 func (s *ProjectProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	group := vars["group"]
-	project := vars["project"]
+	gpid := vars["gpid"]
+	gp := strings.Split(gpid, "%2F")
 
-	commits, err := s.GitlabHTTPClient.GetCommits("http", group, project, "", "")
+	commits, err := s.GitlabHTTPClient.GetCommits("http", gp[0], gp[1], "", "")
 
 	responses := []*st.Response{}
 
 	for _, item := range commits {
-		responses = append(responses, st.ToDir(fmt.Sprint(item.ID), "Fri, 27 Sep 2019 11:42:40 GMT"))
+		responses = append(responses, st.ToDir(item.ID, "Fri, 27 Sep 2019 11:42:40 GMT"))
 	}
 
 	ms := &st.Multistatus{

@@ -18,6 +18,7 @@ var (
 type DAVProxy struct {
 	web.Controller
 	Domain       string
+	NameProxy    web.Controller
 	GroupProxy   web.Controller
 	ProjectProxy web.Controller
 	ShaProxy     web.Controller
@@ -36,18 +37,20 @@ func New(config config.Config) (*DAVProxy, error) {
 	}
 	name := config.Get("NAME")
 	return &DAVProxy{
-		Domain:       name,
-		GroupProxy:   &GroupProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
+		Domain:    name,
+		NameProxy: &NameProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
+		// GroupProxy:   &GroupProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
 		ProjectProxy: &ProjectProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
-		ShaProxy:     &ShaProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
-		PathProxy:    &PathProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient, FullFileInfo: fullFileInfo},
+		// ShaProxy:     &ShaProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
+		PathProxy: &PathProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient, FullFileInfo: fullFileInfo},
 	}, nil
 }
 
 // GetRoute todo
 func (s *DAVProxy) GetRoute() web.RouteMap {
 	return web.MergeRouteMap(
-		s.GroupProxy.GetRoute(),
+		s.NameProxy.GetRoute(),
+		// s.GroupProxy.GetRoute(),
 		s.ProjectProxy.GetRoute(),
 		// s.ShaProxy.GetRoute(),
 		s.PathProxy.GetRoute(),

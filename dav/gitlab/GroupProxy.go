@@ -2,10 +2,9 @@ package gitlab
 
 import (
 	"encoding/xml"
-	"fmt"
 	"net/http"
 
-	"github.com/astaxie/beego/cache"
+	"github.com/SpeedVan/go-common/cache"
 	"github.com/gorilla/mux"
 
 	"github.com/SpeedVan/dav-proxy/dav"
@@ -21,7 +20,7 @@ type GroupProxy struct {
 	web.Controller
 	Name             string
 	GitlabHTTPClient *gitlab.Client
-	Cache            *cache.Cache
+	Cache            cache.StreamClient
 }
 
 // NewGroupProxy todo
@@ -63,7 +62,7 @@ func (s *GroupProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	responses := []*st.Response{}
 
 	for _, item := range projects {
-		responses = append(responses, st.ToDir(fmt.Sprint(item.Name), "Fri, 27 Sep 2019 11:42:40 GMT"))
+		responses = append(responses, st.ToDir(item.Name, "Fri, 27 Sep 2019 11:42:40 GMT"))
 	}
 
 	ms := &st.Multistatus{

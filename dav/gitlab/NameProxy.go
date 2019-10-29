@@ -2,10 +2,10 @@ package gitlab
 
 import (
 	"encoding/xml"
-	"fmt"
 	"net/http"
+	"net/url"
 
-	"github.com/astaxie/beego/cache"
+	"github.com/SpeedVan/go-common/cache"
 
 	"github.com/SpeedVan/dav-proxy/dav"
 	"github.com/SpeedVan/dav-proxy/dav/common"
@@ -20,7 +20,7 @@ type NameProxy struct {
 	web.Controller
 	Name             string
 	GitlabHTTPClient *gitlab.Client
-	Cache            *cache.Cache
+	Cache            cache.StreamClient
 }
 
 // NewNameProxy todo
@@ -54,12 +54,12 @@ func (s *NameProxy) Get(w http.ResponseWriter, r *http.Request) {
 // Propfind todo
 func (s *NameProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 
-	projects, err := s.GitlabHTTPClient.GetProjects("http", group)
+	projects, err := s.GitlabHTTPClient.GetGroupProjects("http")
 
 	responses := []*st.Response{}
 
 	for _, item := range projects {
-		responses = append(responses, st.ToDir(fmt.Sprint(item.Name), "Fri, 27 Sep 2019 11:42:40 GMT"))
+		responses = append(responses, st.ToDir(url.PathEscape(item.Name), "Fri, 27 Sep 2019 11:42:40 GMT"))
 	}
 
 	ms := &st.Multistatus{
@@ -87,7 +87,6 @@ func (s *NameProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 }
 
 // Options todo

@@ -42,30 +42,6 @@ func New(config config.Config) *RootDir {
 	}
 }
 
-// NewHandleFunc todo
-func NewHandleFunc(config config.Config) (string, func(http.ResponseWriter, *http.Request)) {
-	o := New(config)
-
-	//localhost:8887/{protocol:(http|https)}/{domain}/{group}/{project}/{sha}/{path:.*} liunx挂载proxy服务地址
-
-	return "/", func(w http.ResponseWriter, r *http.Request) {
-		// url := r.URL.Path
-		println("method:" + r.Method + ",url:" + r.URL.Path)
-		switch r.Method {
-		case "HEAD":
-			o.Head(w, r)
-		case "GET":
-			o.Get(w, r)
-		case "PROPFIND":
-			o.Propfind(w, r)
-		case "OPTIONS":
-			o.Options(w, r)
-		default:
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		}
-	}
-}
-
 // GetRoute todo
 func (s *RootDir) GetRoute() web.RouteMap {
 	return common.DefaultDavReadonlyMethodsRouteMapBuilder(
@@ -103,5 +79,9 @@ func (s *RootDir) Propfind(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *RootDir) Options(w http.ResponseWriter, r *http.Request) {
-
+	println("root Options")
+	header := w.Header()
+	header.Set("Allow", "OPTIONS, PROPFIND")
+	header.Set("Dav", "1, 2")
+	header.Set("Ms-Author-Via", "DAV")
 }
