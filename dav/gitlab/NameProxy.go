@@ -3,7 +3,7 @@ package gitlab
 import (
 	"encoding/xml"
 	"net/http"
-	"net/url"
+	"strings"
 
 	"github.com/SpeedVan/go-common/cache"
 
@@ -37,7 +37,6 @@ func (s *NameProxy) GetRoute() web.RouteMap {
 		s.Head,
 		s.Get,
 		s.Propfind,
-		s.Options,
 	)
 }
 
@@ -59,7 +58,8 @@ func (s *NameProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	responses := []*st.Response{}
 
 	for _, item := range projects {
-		responses = append(responses, st.ToDir(url.PathEscape(item.Name), "Fri, 27 Sep 2019 11:42:40 GMT"))
+
+		responses = append(responses, st.ToDir(r.URL.Path, strings.Replace(item.PathWithNamespace, "/", "+", 1), "Fri, 27 Sep 2019 11:42:40 GMT"))
 	}
 
 	ms := &st.Multistatus{
@@ -87,9 +87,4 @@ func (s *NameProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-// Options todo
-func (s *NameProxy) Options(w http.ResponseWriter, r *http.Request) {
-
 }

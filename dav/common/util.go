@@ -12,7 +12,6 @@ func DefaultDavReadonlyMethodsRouteMapBuilder(
 	head func(w http.ResponseWriter, r *http.Request),
 	get func(w http.ResponseWriter, r *http.Request),
 	propfind func(w http.ResponseWriter, r *http.Request),
-	options func(w http.ResponseWriter, r *http.Request),
 ) web.RouteMap {
 	items := []*web.RouteItem{
 		&web.RouteItem{Path: path, Method: "HEAD", HandleFunc: head},
@@ -22,4 +21,12 @@ func DefaultDavReadonlyMethodsRouteMapBuilder(
 	}
 
 	return web.NewRouteMap(items...)
+}
+
+func options(w http.ResponseWriter, r *http.Request) {
+	println("dav Options")
+	header := w.Header()
+	header.Set("Allow", "OPTIONS, PROPFIND")
+	header.Set("Dav", "1, 2, 3")
+	header.Set("Ms-Author-Via", "DAV")
 }

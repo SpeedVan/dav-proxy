@@ -2,9 +2,9 @@ package gitlab
 
 import (
 	"encoding/xml"
-	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/SpeedVan/go-common/cache"
 	"github.com/gorilla/mux"
@@ -39,24 +39,15 @@ func NewPathProxy(cl *gitlab.Client) *PathProxy {
 // GetRoute todo
 func (s *PathProxy) GetRoute() web.RouteMap {
 	return common.DefaultDavReadonlyMethodsRouteMapBuilder(
-		"/"+s.Name+"/{group}/{project/{sha}/{path:.*}",
+		"/"+s.Name+"/{gpid}/{sha}/{path:.*}",
 		s.Head,
 		s.Get,
 		s.Propfind,
-		s.Options,
 	)
 }
 
 // Head 根据gitlab的restApi /api/v4/projects/:id/repository/tree 效果可知，文件夹存不存在都无法直接得知，我们需要向上找一层，然后再判断是否存在列表中
 func (s *PathProxy) Head(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	// fmt.Println("head")
-	// fmt.Println(vars["protocol"])
-	// fmt.Println(vars["domain"])
-	fmt.Println(vars["group"])
-	fmt.Println(vars["project"])
-	fmt.Println(vars["sha"])
-	fmt.Println("Path:" + vars["path"])
 	header := w.Header()
 	header.Set("Accept-Ranges", "bytes")
 	header.Set("Content-Length", "18")
@@ -71,7 +62,8 @@ func (s *PathProxy) Head(w http.ResponseWriter, r *http.Request) {
 // Get todo
 func (s *PathProxy) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	reader, resHeader, err := s.GitlabHTTPClient.GetFile("http", vars["group"], vars["project"], vars["sha"], vars["path"])
+	gpid := strings.Split(vars["gpid"], "+")
+	reader, resHeader, err := s.GitlabHTTPClient.GetFile("http", gpid[0], gpid[1], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -89,8 +81,9 @@ func (s *PathProxy) Get(w http.ResponseWriter, r *http.Request) {
 // Propfind todo
 func (s *PathProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	gpid := strings.Split(vars["gpid"], "+")
 
-	treeNodes, err := s.GitlabHTTPClient.GetTree("http", vars["group"], vars["project"], vars["sha"], vars["path"])
+	treeNodes, err := s.GitlabHTTPClient.GetTree("http", gpid[0], gpid[1], vars["sha"], vars["path"])
 	// graphql, err := s.GitlabHTTPClient.Graphql(vars["protocol"], vars["group"], vars["project"], vars["sha"], vars["path"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -101,7 +94,7 @@ func (s *PathProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.FullFileInfo {
 		fileInfoFunc = func(blodID string) string {
-			size, err := s.GitlabHTTPClient.GetBlobSizeFromBody("http", vars["group"], vars["project"], blodID)
+			size, err := s.GitlabHTTPClient.GetBlobSizeFromBody("http", gpid[0], gpid[1], blodID)
 			if err != nil {
 				return ""
 			}
@@ -122,11 +115,11 @@ func (s *PathProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
-// Options todo
-func (s *PathProxy) Options(w http.ResponseWriter, r *http.Request) {
-	header := w.Header()
-	header.Set("Allow", "OPTIONS, PROPFIND")
-	header.Set("Dav", "1, 2")
-	header.Set("Ms-Author-Via", "DAV")
-	w.Write(dataDav)
-}
+// // Options todo
+// func (s *PathProxy) Options(w http.ResponseWriter, r *http.Request) {
+// 	header := w.Header()
+// 	header.Set("Allow", "OPTIONS, PROPFIND")
+// 	header.Set("Dav", "1, 2")
+// 	header.Set("Ms-Author-Via", "DAV")
+// 	w.Write(dataDav)
+// }

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/SpeedVan/dav-proxy/dav/filesystem"
 	"github.com/SpeedVan/dav-proxy/dav/gitlab"
 	"github.com/SpeedVan/dav-proxy/dav/rootdir"
 	"github.com/SpeedVan/go-common/app/web"
@@ -17,8 +18,8 @@ func main() {
 		app.HandleController(rootdir.New(cfg))
 		cfg.ForEachArrayConfig("DIR", func(c config.Config) {
 			switch c.Get("TYPE") {
-			// case "file":
-			// app.HandleFunc(filesystem.NewHandleFunc(c.Get("NAME"), c.WithPrefix("WEBDAV_")))
+			case "file":
+				app.HandleController(filesystem.New(c))
 			case "http":
 				if controller, err := gitlab.New(c); err == nil {
 					app.HandleController(controller)

@@ -37,7 +37,6 @@ func (s *GroupProxy) GetRoute() web.RouteMap {
 		s.Head,
 		s.Get,
 		s.Propfind,
-		s.Options,
 	)
 }
 
@@ -62,7 +61,7 @@ func (s *GroupProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	responses := []*st.Response{}
 
 	for _, item := range projects {
-		responses = append(responses, st.ToDir(item.Name, "Fri, 27 Sep 2019 11:42:40 GMT"))
+		responses = append(responses, st.ToDir(r.URL.Path, item.Name, "Fri, 27 Sep 2019 11:42:40 GMT"))
 	}
 
 	ms := &st.Multistatus{
@@ -90,10 +89,5 @@ func (s *GroupProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-}
-
-// Options todo
-func (s *GroupProxy) Options(w http.ResponseWriter, r *http.Request) {
 
 }

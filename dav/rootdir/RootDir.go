@@ -28,7 +28,7 @@ func New(config config.Config) *RootDir {
 
 	config.GetMap("DIR").ForEach(func(name string, v interface{}) {
 		item := v.(omap.Map)
-		responses = append(responses, st.ToDir(fmt.Sprint(item.Get("NAME")), "Fri, 27 Sep 2019 11:42:40 GMT"))
+		responses = append(responses, st.ToDir("/", fmt.Sprint(item.Get("NAME")), "Fri, 27 Sep 2019 11:42:40 GMT"))
 	})
 
 	ms := &st.Multistatus{
@@ -49,7 +49,6 @@ func (s *RootDir) GetRoute() web.RouteMap {
 		s.Head,
 		s.Get,
 		s.Propfind,
-		s.Options,
 	)
 }
 
@@ -76,12 +75,4 @@ func (s *RootDir) Propfind(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"))
 
 	w.Write(bytes)
-}
-
-func (s *RootDir) Options(w http.ResponseWriter, r *http.Request) {
-	println("root Options")
-	header := w.Header()
-	header.Set("Allow", "OPTIONS, PROPFIND")
-	header.Set("Dav", "1, 2")
-	header.Set("Ms-Author-Via", "DAV")
 }

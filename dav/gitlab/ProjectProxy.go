@@ -40,7 +40,6 @@ func (s *ProjectProxy) GetRoute() web.RouteMap {
 		s.Head,
 		s.Get,
 		s.Propfind,
-		s.Options,
 	)
 }
 
@@ -59,14 +58,14 @@ func (s *ProjectProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	gpid := vars["gpid"]
-	gp := strings.Split(gpid, "%2F")
+	gp := strings.Split(gpid, "+")
 
 	commits, err := s.GitlabHTTPClient.GetCommits("http", gp[0], gp[1], "", "")
 
 	responses := []*st.Response{}
 
 	for _, item := range commits {
-		responses = append(responses, st.ToDir(item.ID, "Fri, 27 Sep 2019 11:42:40 GMT"))
+		responses = append(responses, st.ToDir(r.URL.Path, item.ID, "Fri, 27 Sep 2019 11:42:40 GMT"))
 	}
 
 	ms := &st.Multistatus{
@@ -94,9 +93,4 @@ func (s *ProjectProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-// Options todo
-func (s *ProjectProxy) Options(w http.ResponseWriter, r *http.Request) {
-
 }

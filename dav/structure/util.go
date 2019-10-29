@@ -1,9 +1,9 @@
 package structure
 
-func ToDir(name, now string) *Response {
+func ToDir(path, name, now string) *Response {
 	return &Response{
 		Href: &Href{
-			Innerxml: "/" + name,
+			Innerxml: path + name + "/",
 		},
 		Propstat: &Propstat{
 			Prop: &Prop{

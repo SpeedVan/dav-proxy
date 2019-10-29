@@ -77,8 +77,3 @@ func (s *ShaProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 
 	w.Write(bytes)
 }
-
-// Options todo
-func (s *ShaProxy) Options(w http.ResponseWriter, r *http.Request) {
-
-}
