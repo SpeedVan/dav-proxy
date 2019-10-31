@@ -70,9 +70,9 @@ func (s *PathProxy) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	header := w.Header()
 	header.Set("Accept-Ranges", "bytes")
-	header.Set("Content-Length", resHeader.Get("X-Gitlab-Size"))
+	// header.Set("Content-Length", resHeader.Get("X-Gitlab-Size"))
 	header.Set("Content-Type", resHeader.Get("Content-Type"))
-	header.Set("Etag", resHeader.Get("X-Gitlab-Blob-Id"))
+	header.Set("Etag", resHeader.Get("Etag"))
 	header.Set("Last-Modified", resHeader.Get("Date"))
 	header.Set("Date", resHeader.Get("Date"))
 	io.Copy(w, reader)

@@ -20,6 +20,14 @@ func treeNodes2DAVResponses2(nodes []*gitlab.TreeNode, url string, now string, f
 	nodeLen := len(nodes)
 	responses := make([]*structure.Response, nodeLen)
 
+	// for index, node := range nodes {
+	// 	if node.Type == "tree" {
+	// 		responses[index] = treeNode2DAVResponse2(node, url, now)
+	// 	} else {
+	// 		responses[index] = blobNode2DAVResponse2Simple(node, url, now)
+	// 	}
+	// }
+
 	treeLast := 0
 	brChan := make(chan *structure.Response)
 	for i := 0; i < nodeLen; i++ {
@@ -141,6 +149,48 @@ func blobNode2DAVResponse2WithChan(node *gitlab.TreeNode, url string, now string
 		Propstat: &st.Propstat{
 			Prop: &st.Prop{
 				Getcontentlength: getcontentlength,
+				// Getcontenttype: &st.Getcontenttype{
+				// 	Innerxml: "text/plain; charset=utf-8",
+				// },
+				Resourcetype: &st.Resourcetype{},
+				Displayname: &st.Displayname{
+					Innerxml: node.Name,
+				},
+				Getlastmodified: &st.Getlastmodified{
+					Innerxml: now,
+				},
+				Getetag: &st.Getetag{
+					Innerxml: "\"" + node.ID + "\"",
+				},
+				Supportedlock: &st.Supportedlock{
+					Lockentry: &st.Lockentry{
+						D: "DAV:",
+						Lockscope: &st.Lockscope{
+							Exclusive: &st.Exclusive{},
+						},
+						Locktype: &st.Locktype{
+							Write: &st.Write{},
+						},
+					},
+				},
+			},
+			Status: &st.Status{
+				Innerxml: "HTTP/1.1 200 OK",
+			},
+		},
+	}
+}
+
+func blobNode2DAVResponse2Simple(node *gitlab.TreeNode, url string, now string) *structure.Response {
+	return &st.Response{
+		Href: &st.Href{
+			Innerxml: url + node.Name,
+		},
+		Propstat: &st.Propstat{
+			Prop: &st.Prop{
+				Getcontentlength: &st.Getcontentlength{
+					Innerxml: "",
+				},
 				// Getcontenttype: &st.Getcontenttype{
 				// 	Innerxml: "text/plain; charset=utf-8",
 				// },
