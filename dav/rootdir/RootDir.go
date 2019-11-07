@@ -10,6 +10,8 @@ import (
 	st "github.com/SpeedVan/dav-proxy/dav/structure"
 	"github.com/SpeedVan/go-common/app/web"
 	"github.com/SpeedVan/go-common/config"
+	"github.com/SpeedVan/go-common/log"
+	lc "github.com/SpeedVan/go-common/log/common"
 	"github.com/SpeedVan/go-common/type/collection/omap"
 )
 
@@ -17,12 +19,16 @@ import (
 type RootDir struct {
 	dav.ReadonlyMethod
 	web.Controller
+	Logger      log.Logger
 	davResponse *st.Multistatus
 	path        string
 }
 
 // New todo
-func New(config config.Config) *RootDir {
+func New(config config.Config, logger log.Logger) *RootDir {
+	if logger == nil {
+		logger = lc.NewCommon(log.Debug)
+	}
 
 	responses := []*st.Response{}
 
@@ -37,6 +43,7 @@ func New(config config.Config) *RootDir {
 	}
 
 	return &RootDir{
+		Logger:      logger,
 		davResponse: ms,
 		path:        "/{name}/",
 	}

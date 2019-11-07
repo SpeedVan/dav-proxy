@@ -62,6 +62,11 @@ func (s *ProjectProxy) Propfind(w http.ResponseWriter, r *http.Request) {
 
 	commits, err := s.GitlabHTTPClient.GetCommits("http", gp[0], gp[1], "", "")
 
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	responses := []*st.Response{}
 
 	for _, item := range commits {

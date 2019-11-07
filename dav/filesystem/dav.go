@@ -1,29 +1,32 @@
 package filesystem
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/SpeedVan/go-common/app/web"
+	"github.com/SpeedVan/go-common/log/common"
 
 	"golang.org/x/net/webdav"
 
 	"github.com/SpeedVan/go-common/config"
-	// "github.com/SpeedVan/go-common/log"
+	"github.com/SpeedVan/go-common/log"
 )
 
 // DAV todo
 type DAV struct {
+	Logger log.Logger
 	web.Controller
 	Handler   http.Handler
-	Log       log.Logger
 	FS        webdav.FileSystem
 	Address   string
-	UrlPrefix string
+	URLPrefix string
 }
 
 // New todo
-func New(cfg config.Config) *DAV {
+func New(cfg config.Config, logger log.Logger) *DAV {
+	if logger == nil {
+		logger = common.NewCommon(log.Debug)
+	}
 	prefix := "/" + cfg.Get("NAME") + "/"
 	dir := cfg.Get("FILESYSTEM_DIR")
 
@@ -33,7 +36,7 @@ func New(cfg config.Config) *DAV {
 		LockSystem: webdav.NewMemLS(),
 		Logger: func(r *http.Request, err error) {
 			if err != nil {
-				log.Println(err)
+				logger.Error(err.Error())
 			}
 		},
 	}
@@ -56,8 +59,9 @@ func New(cfg config.Config) *DAV {
 	// })
 
 	return &DAV{
+		Logger:    logger,
 		Handler:   h,
-		UrlPrefix: prefix,
+		URLPrefix: prefix,
 	}
 }
 
@@ -68,7 +72,7 @@ func (s *DAV) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // GetRoute todo
 func (s *DAV) GetRoute() web.RouteMap {
 	return web.RouteMap{
-		s.UrlPrefix + "{_dummy:.*}": s.Handler,
+		s.URLPrefix + "{_dummy:.*}": s.Handler,
 	}
 }
 

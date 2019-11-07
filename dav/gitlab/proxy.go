@@ -7,6 +7,8 @@ import (
 	"github.com/SpeedVan/go-common/app/web"
 	"github.com/SpeedVan/go-common/client/httpclient/gitlab"
 	"github.com/SpeedVan/go-common/config"
+	"github.com/SpeedVan/go-common/log"
+	lc "github.com/SpeedVan/go-common/log/common"
 )
 
 var (
@@ -17,6 +19,7 @@ var (
 // DAVProxy todo
 type DAVProxy struct {
 	web.Controller
+	Logger       log.Logger
 	Domain       string
 	NameProxy    web.Controller
 	GroupProxy   web.Controller
@@ -26,8 +29,11 @@ type DAVProxy struct {
 }
 
 // New todo
-func New(config config.Config) (*DAVProxy, error) {
-	gitlabHTTPClient, err := gitlab.New(config.WithPrefix("GITLAB_"))
+func New(config config.Config, logger log.Logger) (*DAVProxy, error) {
+	if logger == nil {
+		logger = lc.NewCommon(log.Debug)
+	}
+	gitlabHTTPClient, err := gitlab.New(config.WithPrefix("GITLAB_"), logger)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +43,7 @@ func New(config config.Config) (*DAVProxy, error) {
 	}
 	name := config.Get("NAME")
 	return &DAVProxy{
+		Logger:    logger,
 		Domain:    name,
 		NameProxy: &NameProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
 		// GroupProxy:   &GroupProxy{Name: name, GitlabHTTPClient: gitlabHTTPClient},
